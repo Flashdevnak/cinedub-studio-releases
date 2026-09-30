@@ -1,0 +1,72 @@
+name: Publish CineDub v0.2.3 patch
+
+on:
+  push:
+    branches:
+      - update-v0.2.3
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout update payload
+        uses: actions/checkout@v4
+        with:
+          ref: update-v0.2.3
+          path: payload
+
+      - name: Build exact update ZIP
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile, hashlib, json
+          src = Path("payload")
+          out = Path("/tmp/CineDub-Studio-v0.2.3-PATCH.zip")
+          root = "cinedub-studio-v0.2.3"
+          files = [
+              "app.py",
+              "VERSION",
+              "cinedub/runtime_hotfix.py",
+          ]
+          with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+              for rel in files:
+                  z.write(src / rel, f"{root}/{rel}")
+          sha = hashlib.sha256(out.read_bytes()).hexdigest()
+          Path("/tmp/sha.txt").write_text(sha, encoding="utf-8")
+          manifest = {
+              "version": "0.2.3",
+              "package_url": "https://raw.githubusercontent.com/Flashdevnak/cinedub-studio-releases/main/patches/CineDub-Studio-v0.2.3-PATCH.zip",
+              "sha256": sha,
+              "notes": "Fix Auto Localization PyAV metadata_errors crash and dropdowns closing during realtime refresh."
+          }
+          Path("/tmp/latest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print("patch sha256", sha)
+          PY
+
+      - name: Checkout release main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: release
+
+      - name: Publish patch and manifest
+        shell: bash
+        run: |
+          mkdir -p release/patches
+          cp /tmp/CineDub-Studio-v0.2.3-PATCH.zip release/patches/
+          cp /tmp/latest.json release/latest.json
+          cp /tmp/sha.txt release/patches/CineDub-Studio-v0.2.3-PATCH.zip.sha256
+          cd release
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add latest.json patches/CineDub-Studio-v0.2.3-PATCH.zip patches/CineDub-Studio-v0.2.3-PATCH.zip.sha256
+          if git diff --cached --quiet; then
+            echo "No changes to publish"
+          else
+            git commit -m "release: publish CineDub v0.2.3 online patch"
+            git push origin HEAD:main
+          fi

@@ -1,6 +1,6 @@
 {
   "version": "0.2.3",
   "package_url": "https://raw.githubusercontent.com/Flashdevnak/cinedub-studio-releases/main/patches/CineDub-Studio-v0.2.3-PATCH.zip",
-  "sha256": "78323fcb3620b26307d4ed39b2ab66d94f1d3c2fb10df14bb2a8db7a93849037",
+  "sha256": "e7d225e0a40f8fa03a8033965d27e6cb5bd6999b97d1af36ac9f6d8f81947052",
   "notes": "Fix Auto Localization PyAV metadata_errors crash and dropdowns closing during realtime refresh."
 }
